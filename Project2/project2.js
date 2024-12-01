@@ -2,19 +2,36 @@
  * @Instructions
  * 		@task1 : Complete the setTexture function to handle non power of 2 sized textures
  * 		@task2 : Implement the lighting by modifying the fragment shader, constructor,
- *      @task3: 
- *      @task4: 
- * 		setMesh, draw, setAmbientLight, setSpecularLight and enableLighting functions 
+ *      @task3:
+ *      @task4:
+ * 		setMesh, draw, setAmbientLight, setSpecularLight and enableLighting functions
  */
 
-
-function GetModelViewProjection(projectionMatrix, translationX, translationY, translationZ, rotationX, rotationY) {
-	
+function GetModelViewProjection(
+	projectionMatrix,
+	translationX,
+	translationY,
+	translationZ,
+	rotationX,
+	rotationY
+) {
 	var trans1 = [
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		translationX, translationY, translationZ, 1
+		1,
+		0,
+		0,
+		0,
+		0,
+		1,
+		0,
+		0,
+		0,
+		0,
+		1,
+		0,
+		translationX,
+		translationY,
+		translationZ,
+		1,
 	];
 	var rotatXCos = Math.cos(rotationX);
 	var rotatXSin = Math.sin(rotationX);
@@ -23,18 +40,42 @@ function GetModelViewProjection(projectionMatrix, translationX, translationY, tr
 	var rotatYSin = Math.sin(rotationY);
 
 	var rotatx = [
-		1, 0, 0, 0,
-		0, rotatXCos, -rotatXSin, 0,
-		0, rotatXSin, rotatXCos, 0,
-		0, 0, 0, 1
-	]
+		1,
+		0,
+		0,
+		0,
+		0,
+		rotatXCos,
+		-rotatXSin,
+		0,
+		0,
+		rotatXSin,
+		rotatXCos,
+		0,
+		0,
+		0,
+		0,
+		1,
+	];
 
 	var rotaty = [
-		rotatYCos, 0, -rotatYSin, 0,
-		0, 1, 0, 0,
-		rotatYSin, 0, rotatYCos, 0,
-		0, 0, 0, 1
-	]
+		rotatYCos,
+		0,
+		-rotatYSin,
+		0,
+		0,
+		1,
+		0,
+		0,
+		rotatYSin,
+		0,
+		rotatYCos,
+		0,
+		0,
+		0,
+		0,
+		1,
+	];
 
 	var test1 = MatrixMult(rotaty, rotatx);
 	var test2 = MatrixMult(trans1, test1);
@@ -43,19 +84,17 @@ function GetModelViewProjection(projectionMatrix, translationX, translationY, tr
 	return mvp;
 }
 
-
 class MeshDrawer {
 	// The constructor is a good place for taking care of the necessary initializations.
 	constructor() {
 		this.prog = InitShaderProgram(meshVS, meshFS);
-		this.mvpLoc = gl.getUniformLocation(this.prog, 'mvp');
-		this.showTexLoc = gl.getUniformLocation(this.prog, 'showTex');
+		this.mvpLoc = gl.getUniformLocation(this.prog, "mvp");
+		this.showTexLoc = gl.getUniformLocation(this.prog, "showTex");
 
-		this.colorLoc = gl.getUniformLocation(this.prog, 'color');
+		this.colorLoc = gl.getUniformLocation(this.prog, "color");
 
-		this.vertPosLoc = gl.getAttribLocation(this.prog, 'pos');
-		this.texCoordLoc = gl.getAttribLocation(this.prog, 'texCoord');
-
+		this.vertPosLoc = gl.getAttribLocation(this.prog, "pos");
+		this.texCoordLoc = gl.getAttribLocation(this.prog, "texCoord");
 
 		this.vertbuffer = gl.createBuffer();
 		this.texbuffer = gl.createBuffer();
@@ -65,7 +104,6 @@ class MeshDrawer {
 		/**
 		 * @Task2 : You should initialize the required variables for lighting here
 		 */
-		
 	}
 
 	setMesh(vertPos, texCoords, normalCoords) {
@@ -105,11 +143,8 @@ class MeshDrawer {
 
 		///////////////////////////////
 
-
 		updateLightPos();
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
-
-
 	}
 
 	// This method is called to set the texture of the mesh.
@@ -119,28 +154,26 @@ class MeshDrawer {
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 
 		// You can set the texture image data using the following command.
-		gl.texImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RGB,
-			gl.RGB,
-			gl.UNSIGNED_BYTE,
-			img);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
 
-		// Set texture parameters 
+		// Set texture parameters
 		if (isPowerOf2(img.width) && isPowerOf2(img.height)) {
 			gl.generateMipmap(gl.TEXTURE_2D);
 		} else {
-			console.error("Task 1: Non power of 2, you should implement this part to accept non power of 2 sized textures");
-			/**
-			 * @Task1 : You should implement this part to accept non power of 2 sized textures
-			 */
+			console.warn("Task 1: Non power of 2 image handling.");
+			// Set wrapping to CLAMP_TO_EDGE
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+			// Set filtering to linear
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		}
 
 		gl.useProgram(this.prog);
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
-		const sampler = gl.getUniformLocation(this.prog, 'tex');
+		const sampler = gl.getUniformLocation(this.prog, "tex");
 		gl.uniform1i(sampler, 0);
 	}
 
@@ -150,20 +183,23 @@ class MeshDrawer {
 	}
 
 	enableLighting(show) {
-		console.error("Task 2: You should implement the lighting and implement this function ");
+		console.error(
+			"Task 2: You should implement the lighting and implement this function "
+		);
 		/**
 		 * @Task2 : You should implement the lighting and implement this function
 		 */
 	}
-	
+
 	setAmbientLight(ambient) {
-		console.error("Task 2: You should implement the lighting and implement this function ");
+		console.error(
+			"Task 2: You should implement the lighting and implement this function "
+		);
 		/**
 		 * @Task2 : You should implement the lighting and implement this function
 		 */
 	}
 }
-
 
 function isPowerOf2(value) {
 	return (value & (value - 1)) == 0;
@@ -238,9 +274,9 @@ var lightY = 1;
 const keys = {};
 function updateLightPos() {
 	const translationSpeed = 1;
-	if (keys['ArrowUp']) lightY -= translationSpeed;
-	if (keys['ArrowDown']) lightY += translationSpeed;
-	if (keys['ArrowRight']) lightX -= translationSpeed;
-	if (keys['ArrowLeft']) lightX += translationSpeed;
+	if (keys["ArrowUp"]) lightY -= translationSpeed;
+	if (keys["ArrowDown"]) lightY += translationSpeed;
+	if (keys["ArrowRight"]) lightX -= translationSpeed;
+	if (keys["ArrowLeft"]) lightX += translationSpeed;
 }
 ///////////////////////////////////////////////////////////////////////////////////
