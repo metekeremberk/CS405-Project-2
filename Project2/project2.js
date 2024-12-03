@@ -101,9 +101,19 @@ class MeshDrawer {
 
 		this.numTriangles = 0;
 
-		/**
-		 * @Task2 : You should initialize the required variables for lighting here
-		 */
+		// #region Task 2
+		this.normalPosLoc = gl.getAttribLocation(this.prog, "normal");
+
+		this.normalbuffer = gl.createBuffer();
+
+		this.lightPos = [0, 0, 0];
+		this.ambient = 0.5;
+		this.enableLight = false;
+
+		this.lightPosLoc = gl.getUniformLocation(this.prog, "lightPos");
+		this.ambientLoc = gl.getUniformLocation(this.prog, "ambient");
+		this.enableLightLoc = gl.getUniformLocation(this.prog, "enableLighting");
+		// #endregion
 	}
 
 	setMesh(vertPos, texCoords, normalCoords) {
@@ -116,9 +126,14 @@ class MeshDrawer {
 
 		this.numTriangles = vertPos.length / 3;
 
-		/**
-		 * @Task2 : You should update the rest of this function to handle the lighting
-		 */
+		// #region Task 2
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normalbuffer);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			new Float32Array(normalCoords),
+			gl.STATIC_DRAW
+		);
+		// #endregion
 	}
 
 	// This method is called to draw the triangular mesh.
@@ -137,13 +152,20 @@ class MeshDrawer {
 		gl.enableVertexAttribArray(this.texCoordLoc);
 		gl.vertexAttribPointer(this.texCoordLoc, 2, gl.FLOAT, false, 0, 0);
 
-		/**
-		 * @Task2 : You should update this function to handle the lighting
-		 */
-
-		///////////////////////////////
+		// #region Task 2
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.normalbuffer);
+		gl.enableVertexAttribArray(this.normalPosLoc);
+		gl.vertexAttribPointer(this.normalPosLoc, 3, gl.FLOAT, false, 0, 0);
+		// #endregion
 
 		updateLightPos();
+
+		// #region Task 2
+		gl.uniform3fv(this.lightPosLoc, new Float32Array([5, lightY, lightX]));
+
+		gl.uniform1f(this.ambientLoc, this.ambient);
+		// #endregion
+
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
 	}
 
@@ -160,7 +182,7 @@ class MeshDrawer {
 		if (isPowerOf2(img.width) && isPowerOf2(img.height)) {
 			gl.generateMipmap(gl.TEXTURE_2D);
 		} else {
-			console.warn("Task 1: Non power of 2 image handling.");
+			// #region Task 1
 			// Set wrapping to CLAMP_TO_EDGE
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -168,6 +190,7 @@ class MeshDrawer {
 			// Set filtering to linear
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			// #endregion
 		}
 
 		gl.useProgram(this.prog);
@@ -183,22 +206,19 @@ class MeshDrawer {
 	}
 
 	enableLighting(show) {
-		console.error(
-			"Task 2: You should implement the lighting and implement this function "
-		);
-		/**
-		 * @Task2 : You should implement the lighting and implement this function
-		 */
+		// #region Task 2
+		gl.useProgram(this.prog);
+		gl.uniform1f(this.enableLightLoc, show);
+		// #endregion
 	}
 
 	setAmbientLight(ambient) {
-		console.error(
-			"Task 2: You should implement the lighting and implement this function "
-		);
-		/**
-		 * @Task2 : You should implement the lighting and implement this function
-		 */
+		// #region Task 2
+		this.ambient = ambient;
+		// #endregion
 	}
+
+	setSpecularLight(specular) {}
 }
 
 function isPowerOf2(value) {
@@ -256,8 +276,16 @@ const meshFS = `
 			void main()
 			{
 				if(showTex && enableLighting){
-					// UPDATE THIS PART TO HANDLE LIGHTING
-					gl_FragColor = texture2D(tex, v_texCoord);
+					vec3 lightDir = normalize(lightPos);
+					
+					// Ambient light
+					vec3 ambientLight = vec3(ambient);
+
+					// Diffuse ligting
+					float light = max(dot(v_normal, lightDir), 0.0);
+					vec3 diffuse = vec3(1.0) * light;
+
+					gl_FragColor = vec4((ambientLight + diffuse), 1.0) * texture2D(tex, v_texCoord);
 				}
 				else if(showTex){
 					gl_FragColor = texture2D(tex, v_texCoord);
