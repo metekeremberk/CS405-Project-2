@@ -2,8 +2,8 @@
  * @Instructions
  * 		@task1 : Complete the setTexture function to handle non power of 2 sized textures
  * 		@task2 : Implement the lighting by modifying the fragment shader, constructor,
- *      @task3:
- *      @task4:
+ *      @task3 :
+ *      @task4 :
  * 		setMesh, draw, setAmbientLight, setSpecularLight and enableLighting functions
  */
 
@@ -114,6 +114,12 @@ class MeshDrawer {
 		this.ambientLoc = gl.getUniformLocation(this.prog, "ambient");
 		this.enableLightLoc = gl.getUniformLocation(this.prog, "enableLighting");
 		// #endregion
+
+		// #region Task 3
+		this.specular = 50;
+
+		this.specularPos = gl.getUniformLocation(this.prog, "specular");
+		// #endregion
 	}
 
 	setMesh(vertPos, texCoords, normalCoords) {
@@ -164,6 +170,10 @@ class MeshDrawer {
 		gl.uniform3fv(this.lightPosLoc, new Float32Array([5, lightY, lightX]));
 
 		gl.uniform1f(this.ambientLoc, this.ambient);
+		// #endregion
+
+		// #region Task 3
+		gl.uniform1f(this.specularPos, this.specular);
 		// #endregion
 
 		gl.drawArrays(gl.TRIANGLES, 0, this.numTriangles);
@@ -218,7 +228,11 @@ class MeshDrawer {
 		// #endregion
 	}
 
-	setSpecularLight(specular) {}
+	// #region Task 3
+	setSpecularLight(specular) {
+		this.specular = specular;
+	}
+	// #endregion
 }
 
 function isPowerOf2(value) {
@@ -257,9 +271,6 @@ const meshVS = `
 			}`;
 
 // Fragment shader source code
-/**
- * @Task2 : You should update the fragment shader to handle the lighting
- */
 const meshFS = `
 			precision mediump float;
 
@@ -269,6 +280,7 @@ const meshFS = `
 			uniform vec3 color; 
 			uniform vec3 lightPos;
 			uniform float ambient;
+			uniform float specular;
 
 			varying vec2 v_texCoord;
 			varying vec3 v_normal;
@@ -281,11 +293,16 @@ const meshFS = `
 					// Ambient light
 					vec3 ambientLight = vec3(ambient);
 
-					// Diffuse ligting
+					// Diffuse light
 					float light = max(dot(v_normal, lightDir), 0.0);
-					vec3 diffuse = vec3(1.0) * light;
+					vec3 diffuseLight = vec3(1.0) * light;
 
-					gl_FragColor = vec4((ambientLight + diffuse), 1.0) * texture2D(tex, v_texCoord);
+					// Specular light
+					vec3 reflectDir = reflect(-lightDir, v_normal);
+					float spec = pow(max(dot(vec3(0.0), reflectDir), 0.0), specular);
+					vec3 specularLight = vec3(1.0) * spec;
+
+					gl_FragColor = vec4((ambientLight + diffuseLight + specularLight), 1.0) * texture2D(tex, v_texCoord);
 				}
 				else if(showTex){
 					gl_FragColor = texture2D(tex, v_texCoord);
